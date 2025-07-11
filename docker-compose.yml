@@ -1,0 +1,18 @@
+services:
+  flask-docker-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flask-docker-manager
+    container_name: flask-docker-manager
+    ports:
+      - "5000:5000"
+      - "4480:4480"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+    volumes:
+      - /root/projects-docker-compose:/root/projects-docker-compose
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
