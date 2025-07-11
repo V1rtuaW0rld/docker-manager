@@ -4,6 +4,7 @@ import os
 import subprocess
 import socket
 import re
+import sys
 
 app = Flask(__name__, static_folder='static')
 
@@ -243,9 +244,11 @@ def get_server_ip():
     try:
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
+        print(f"IP détectée dans get_server_ip : {ip}")
+        sys.stdout.flush()
+        return ip
     finally:
         s.close()
-    return ip
 
 def get_shell(container_name):
     """Détecte le shell disponible dans le conteneur Docker"""
@@ -320,34 +323,37 @@ server {
 
 @app.route('/exec/<container>')
 def open_terminal(container):
-    print(f"📝 Lancement terminal pour {container}")
+    print(f"Début de open_terminal pour {container}")
     shell = get_shell(container)
     if not shell:
-        print(f"❌ Aucun shell interactif trouvé dans {container}")
+        print(f"Aucun shell interactif trouvé dans {container}")
         return f"Aucun shell interactif trouvé dans le conteneur {container}", 500
 
+    print("Nettoyage des processus ttyd")
     cleanup_ttyd()
 
     ttyd_port = get_free_port()
-    print(f"📡 Port ttyd trouvé : {ttyd_port}")
+    print(f"Port ttyd trouvé : {ttyd_port}")
 
     ttyd_cmd = ['ttyd', '--port', str(ttyd_port), '--interface', '0.0.0.0', 'docker', 'exec', '-it', container, shell]
-    print(f"🚀 Commande ttyd : {' '.join(ttyd_cmd)}")
+    print(f"Commande ttyd : {' '.join(ttyd_cmd)}")
 
     try:
         process = subprocess.Popen(ttyd_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"✅ ttyd lancé avec PID {process.pid}")
+        print(f"ttyd lancé avec PID {process.pid}")
     except Exception as e:
-        print(f"❌ Exception ttyd : {str(e)}")
+        print(f"Exception ttyd : {str(e)}")
         return f"Erreur lancement ttyd : {str(e)}", 500
 
+    print("Enregistrement du proxy Nginx")
     result = register_nginx_proxy(container, ttyd_port)
     if result is not True:
-        print(f"❌ Erreur Nginx : {result}")
+        print(f"Erreur Nginx : {result}")
         return result
 
-    server_ip = "192.168.0.4"
-    print(f"✅ Redirection vers http://{server_ip}:4480/terminal/{container}")
+    server_ip = os.getenv("SERVER_IP", get_server_ip())
+    print(f"IP détectée pour redirection : {server_ip}")
+    print(f"Redirection vers http://{server_ip}:4480/terminal/{container}")
     return redirect(f"http://{server_ip}:4480/terminal/{container}")
 
 if __name__ == '__main__':
