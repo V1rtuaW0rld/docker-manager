@@ -3,8 +3,7 @@ from PIL import Image
 import os
 import subprocess
 import socket
-import re
-import sys
+
 
 app = Flask(__name__, static_folder='static')
 
@@ -215,146 +214,61 @@ def get_project_containers(project_name):
 def index():
     return render_template('index.html')
 
-
-def cleanup_ttyd():
-    try:
-        subprocess.run(['pkill', '-f', 'ttyd'], check=False)
-        print("✅ Processus ttyd existants nettoyés")
-    except Exception as e:
-        print(f"⚠️ Erreur lors du nettoyage des processus ttyd : {e}")
-
-def get_free_port(start_port=30000, end_port=40000):
-    for port in range(start_port, end_port):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('0.0.0.0', port))
-            s.close()
-            print(f"✅ Port libre trouvé : {port}")
-            return port
-        except OSError as e:
-            print(f"⚠️ Port {port} non disponible : {e}")
-            continue
-    raise RuntimeError("Aucun port libre trouvé dans la plage")
-
+def get_free_port():
+    """Trouve un port libre pour ttyd"""
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
 
 def get_server_ip():
-    """Renvoie l’IP réelle de la machine hôte"""
+    """Renvoie l'IP réseau réelle du serveur (pas 127.0.0.1)"""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.connect(("8.8.8.8", 80))
+        s.connect(("8.8.8.8", 80))  # ping fictif juste pour récupérer une IP locale
         ip = s.getsockname()[0]
-        print(f"IP détectée dans get_server_ip : {ip}")
-        sys.stdout.flush()
-        return ip
+    except Exception:
+        ip = "127.0.0.1"
     finally:
         s.close()
+    return ip
 
-def get_shell(container_name):
-    """Détecte le shell disponible dans le conteneur Docker"""
-    for shell_cmd in ['bash', 'sh']:
-        try:
-            subprocess.run(
-                ['docker', 'exec', container_name, shell_cmd, '-c', 'exit'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True
-            )
-            return shell_cmd
-        except subprocess.CalledProcessError:
-            continue
-    return None  # Aucun shell disponible
-
-import os
 import subprocess
 
-def register_nginx_proxy(container, ttyd_port):
-    template_path = "/etc/nginx/templates/ttyd.conf"
-    conf_path = "/etc/nginx/conf.d/ttyd.conf"
-
+def get_shell(container_name):
+    # Tester bash
     try:
-        with open(template_path, "r") as f:
-            template = f.read()
-        print(f"✅ Template lu : {template_path}")
-    except Exception as e:
-        print(f"❌ Erreur : template Nginx non trouvé : {e}")
-        return f"Template introuvable à {template_path}", 500
+        subprocess.run(['docker', 'exec', container_name, 'bash', '-c', 'exit'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return 'bash'
+    except subprocess.CalledProcessError:
+        pass
 
-    existing_conf = ""
+    # Tester sh
     try:
-        with open(conf_path, "r") as f:
-            existing_conf = f.read()
-    except FileNotFoundError:
-        existing_conf = """
-server {
-    listen 4480;
-    server_name localhost;
+        subprocess.run(['docker', 'exec', container_name, 'sh', '-c', 'exit'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return 'sh'
+    except subprocess.CalledProcessError:
+        pass
 
-    # Les blocs location seront ajoutés ici
-}
-"""
-
-    new_location = template.replace("__CONTAINER__", container).replace("__TTYD_PORT__", str(ttyd_port))
-    print(f"📝 Nouveau bloc location pour {container} sur port {ttyd_port}:\n{new_location}")
-
-    existing_conf = re.sub(rf'location /terminal/{container} {{[^}}]*}}', '', existing_conf)
-    server_end = existing_conf.rfind('}')
-    new_conf = existing_conf[:server_end] + new_location + existing_conf[server_end:]
-
-    try:
-        with open(conf_path, "w") as f:
-            f.write(new_conf)
-        print(f"✅ Fichier écrit : {conf_path}")
-    except Exception as e:
-        print(f"❌ Erreur lors de l’écriture : {e}")
-        return f"Erreur écriture conf Nginx : {str(e)}", 500
-
-    check = subprocess.run(["nginx", "-t"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if check.returncode != 0:
-        error = check.stderr.decode()
-        print(f"❌ Config Nginx invalide :\n{error}")
-        return f"Erreur Nginx config :\n{error}", 500
-
-    subprocess.run(["nginx", "-s", "reload"])
-    print(f"✅ Nginx rechargé pour /terminal/{container}")
-    return True
-
-
-
+    return None  # Aucun shell disponible
+    
 @app.route('/exec/<container>')
 def open_terminal(container):
-    print(f"Début de open_terminal pour {container}")
+    """Ouvre une console ttyd attachée au conteneur Docker"""
     shell = get_shell(container)
     if not shell:
-        print(f"Aucun shell interactif trouvé dans {container}")
         return f"Aucun shell interactif trouvé dans le conteneur {container}", 500
 
-    print("Nettoyage des processus ttyd")
-    cleanup_ttyd()
-
-    ttyd_port = get_free_port()
-    print(f"Port ttyd trouvé : {ttyd_port}")
-
-    ttyd_cmd = ['ttyd', '--port', str(ttyd_port), '--interface', '0.0.0.0', 'docker', 'exec', '-it', container, shell]
-    print(f"Commande ttyd : {' '.join(ttyd_cmd)}")
+    port = get_free_port()
+    cmd = ['ttyd', '--port', str(port), '--interface', '0.0.0.0', 'docker', 'exec', '-it', container, shell]
 
     try:
-        process = subprocess.Popen(ttyd_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"ttyd lancé avec PID {process.pid}")
+        subprocess.Popen(cmd)
+        ip = get_server_ip()
+        return redirect(f"http://{ip}:{port}")
     except Exception as e:
-        print(f"Exception ttyd : {str(e)}")
-        return f"Erreur lancement ttyd : {str(e)}", 500
-
-    print("Enregistrement du proxy Nginx")
-    result = register_nginx_proxy(container, ttyd_port)
-    if result is not True:
-        print(f"Erreur Nginx : {result}")
-        return result
-
-    server_ip = os.getenv("SERVER_IP", get_server_ip())
-    print(f"IP détectée pour redirection : {server_ip}")
-    print(f"Redirection vers http://{server_ip}:4480/terminal/{container}")
-    return redirect(f"http://{server_ip}:4480/terminal/{container}")
+        return f"Erreur lors de l'ouverture de la console pour {container} : {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

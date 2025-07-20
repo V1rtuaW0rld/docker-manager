@@ -1,10 +1,5 @@
 # 🐍 Base Python minimaliste
 FROM python:3.10-slim
-RUN apt-get update && apt-get install -y \
-    nano \
-    vim \
-    less \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 🧰 Installer pip + Docker CLI
 RUN apt-get update && apt-get install -y \
@@ -21,39 +16,6 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
   docker.io \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-
-# 🛠️ Installer dépendances pour compiler ttyd
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    git \
-    libjson-c-dev \
-    libwebsockets-dev \
-    libssl-dev \
-    zlib1g-dev \
-    libuv1-dev \
-    && git clone https://github.com/tsl0922/ttyd.git /opt/ttyd \
-    && cd /opt/ttyd && mkdir build && cd build \
-    && cmake .. && make && make install \
-    && rm -rf /opt/ttyd \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 🧰 Installer Nginx
-RUN apt-get update && apt-get install -y nginx
-
-# 📁 Copier le fichier de conf template
-COPY nginx/ttyd.conf /etc/nginx/templates/ttyd.conf
-
-# 📁 Copier la conf principale de Nginx
-COPY nginx/default.conf /etc/nginx/sites-enabled/default
-
-# 📁 Copier le script de démarrage
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-# 🚀 Point d’entrée unique : Nginx + Flask
-ENTRYPOINT ["/start.sh"]
 
 # 📁 Répertoire de travail
 WORKDIR /app
@@ -72,3 +34,6 @@ ENV DOCKER_PROJECTS_PATH="/root/projects-docker-compose"
 
 # 🔓 Port exposé par Flask
 EXPOSE 5000
+
+# 🚀 Lancer Flask en threaded
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000", "--with-threads"]
