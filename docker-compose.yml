@@ -1,0 +1,16 @@
+services:
+  docker-manager:
+    image: docker-manager:latest
+    container_name: docker-manager
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - SERVER_IP=192.168.X.X
+    volumes:
+      - /root/projects-docker-compose:/root/projects-docker-compose
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
