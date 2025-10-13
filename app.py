@@ -14,25 +14,71 @@ from concurrent.futures import ThreadPoolExecutor
 
 @app.route('/api/projects', methods=['GET'])
 def list_projects():
-    """Lister les projets Docker Compose (avec parallélisation du statut)"""
-    
-    # 🔍 Lister les dossiers valides contenant un docker-compose.yml
+    urls = get_project_urls(DOCKER_PROJECTS_PATH)
+
     project_dirs = sorted([
         item for item in os.listdir(DOCKER_PROJECTS_PATH)
         if os.path.isdir(os.path.join(DOCKER_PROJECTS_PATH, item)) and
            os.path.exists(os.path.join(DOCKER_PROJECTS_PATH, item, 'docker-compose.yml'))
-    ], key=str.lower)  # ⬅️ Tri alphabétique insensible à la casse
+    ], key=str.lower)
 
     def build_project_entry(item):
         path = os.path.join(DOCKER_PROJECTS_PATH, item)
         status = get_project_status(path)
-        return {'name': item, 'status': status}
+        return {
+            'name': item,
+            'status': status,
+            'url': urls.get(item)  # ← injecte l'URL ici
+        }
 
-    # ⚙️ Parallélisation de la construction des entrées
     with ThreadPoolExecutor(max_workers=8) as executor:
         projects = list(executor.map(build_project_entry, project_dirs))
 
     return jsonify(projects)
+
+
+def get_project_urls(projects_path):
+    urls = {}
+    for project_name in os.listdir(projects_path):
+        compose_path = os.path.join(projects_path, project_name, "docker-compose.yml")
+        if os.path.isfile(compose_path):
+            with open(compose_path, "r", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+                if first_line.startswith("#http"):
+                    urls[project_name] = first_line.lstrip("#").strip()
+    return urls
+
+urls = get_project_urls(DOCKER_PROJECTS_PATH)
+print("🔗 URLs détectées :", urls)
+
+def get_status(service_name, projects_path):
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "ps", "-q", service_name],
+            cwd=os.path.join(projects_path, service_name),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        return "running" if result.stdout.strip() else "stopped"
+    except Exception as e:
+        print(f"⚠️ Erreur get_status pour {service_name} :", e)
+        return "stopped"
+
+def get_all_services(projects_path):
+    return [
+        name for name in os.listdir(projects_path)
+        if os.path.isdir(os.path.join(projects_path, name))
+    ]
+
+services = []
+for service_name in get_all_services(DOCKER_PROJECTS_PATH):
+    services.append({
+        "name": service_name,
+        "status": get_status(service_name, DOCKER_PROJECTS_PATH),
+        "url": urls.get(service_name)
+    })
+
 
 
 def get_project_status(project_path):

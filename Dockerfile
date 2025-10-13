@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.10.13-slim
 
 # 🧰 Installer pip + Docker CLI (via dépôt officiel Docker)
 RUN apt-get update && apt-get install -y \

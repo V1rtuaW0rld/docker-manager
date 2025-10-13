@@ -72,7 +72,14 @@ function renderProjects() {
                     <img src="/projects/${project.name}/logo.png" class="project-logo" 
                          onerror="this.style.display='none'" alt="${project.name} logo">
 
-                    <div class="project-name">${project.name}</div>
+                    <div class="project-name">
+                    ${project.url 
+                    ? `<a href="${project.url}" target="_blank">${project.name}</a>` 
+                    : `${project.name}`
+                    }
+                    </div>
+
+
 
                     <div class="project-status">
                         <div class="status-dot ${project.status}"></div>
