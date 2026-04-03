@@ -331,6 +331,7 @@ function viewLogs(projectName) {
 
 function closeLogs() {
     document.getElementById('log-overlay').style.display = "none"; // Masquer l'overlay
+    document.getElementById('log-modal').classList.remove('maximized'); // Réinitialiser la taille globale
 }
 
 function viewCompose(projectName) {
@@ -353,11 +354,20 @@ if (!overlay) {
 
 function closeCompose() {
     document.getElementById('compose-overlay').style.display = "none"; // Masquer l'overlay
+    document.getElementById('compose-modal').classList.remove('maximized'); // Réinitialiser la taille globale
 }
+
 
 function redirectToEdit() {
     const projectName = document.getElementById('compose-title').innerText;
     window.location.href = `/edit/${projectName}`;
+}
+
+function toggleMaximize(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.classList.toggle('maximized');
+    }
 }
 
 

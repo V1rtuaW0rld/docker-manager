@@ -294,21 +294,27 @@
 </head>
 
 <div id="log-overlay" class="hidden">
-    <div class="log-container">
+    <div class="log-container" id="log-modal">
         <div class="log-header">
             <span id="log-title"></span> <!-- Affichera le nom du projet -->
-            <button onclick="closeLogs()" class="close-btn">✖</button>
+            <div class="window-controls">
+                <button onclick="toggleMaximize('log-modal')" class="maximize-btn">🗖</button>
+                <button onclick="closeLogs()" class="close-btn">✖</button>
+            </div>
         </div>
         <div id="log-content"></div>
     </div>
 </div>
 
 <div id="compose-overlay" class="hidden">
-    <div class="compose-container">
+    <div class="compose-container" id="compose-modal">
         <div class="compose-header">
 		    <img src="/static/icons/edit.png" class="edit-icon" alt="Modifier" title="Éditer le docker-compose" onclick="redirectToEdit()">
             <span id="compose-title">{{ project_name }}</span> <!-- Affiche le nom du projet -->
-            <button onclick="closeCompose()" class="close-btn">✖</button>
+            <div class="window-controls">
+                <button onclick="toggleMaximize('compose-modal')" class="maximize-btn">🗖</button>
+                <button onclick="closeCompose()" class="close-btn">✖</button>
+            </div>
         </div>
         <pre id="compose-content"></pre>
     </div>
