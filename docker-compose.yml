@@ -1,16 +1,23 @@
 services:
   docker-manager:
-    image: docker-manager:latest
+    build: .
+    image: virtuaworld/docker-manager:latest
     container_name: docker-manager
     ports:
-      - "5000:5000"
+      - "5000-5050:5000-5050"
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-      - SERVER_IP=192.168.X.X
+      - SERVER_IP=192.168.0.2
     volumes:
       - /root/projects-docker-compose:/root/projects-docker-compose
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
 

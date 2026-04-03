@@ -183,13 +183,15 @@
     background: white;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Ombre plus marquée */
     position: absolute;
     z-index: 9999;
-    min-width: 120px;
+    min-width: 160px;
     top: 100%;
     right: 100%;
     transform: translateX(-10px);
+    max-height: 250px; /* Limite de hauteur */
+    overflow-y: auto;  /* Scroll si trop d'items */
 }
 
 
@@ -221,6 +223,11 @@
   position: relative;
   z-index: 1;
   overflow: visible;
+  transition: all 0.3s ease;
+}
+
+.project-card:hover {
+  z-index: 100; /* Assure que la carte passe au-dessus des autres */
 }
 
 
@@ -245,20 +252,20 @@
 }
 
 
-.btn-logs {
+.btn-logs, .btn-console {
   background: none;
   border: none;
   padding: 5px;
 }
 
-.btn-logs:hover {
+.btn-logs:hover, .btn-console:hover {
   opacity: 0.8;
 }
 
 .logs-dropdown {
   margin-left: 4px;
 }
-.btn-logs {
+.btn-logs, .btn-console {
   width: 40px;
   height: 40px;
   cursor: pointer;

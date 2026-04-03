@@ -261,12 +261,15 @@ def index():
     return render_template('index.html')
 
 def get_free_port():
-    """Trouve un port libre pour ttyd"""
-    s = socket.socket()
-    s.bind(('', 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
+    """Trouve un port libre dans la plage 5001-5050 pour ttyd"""
+    for port in range(5001, 5051):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('', port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError("Aucun port libre disponible entre 5001 et 5050")
 
 def get_server_ip():
     """Renvoie l'IP réseau réelle du serveur (pas 127.0.0.1)"""
@@ -281,6 +284,10 @@ def get_server_ip():
     return ip
 
 import subprocess
+import time
+
+# Dictionnaire pour stocker les instances ttyd en cours: { container_name: {"port": port, "process": Popen} }
+ttyd_instances = {}
 
 def get_shell(container_name):
     # Tester bash
@@ -299,14 +306,34 @@ def get_shell(container_name):
 
     return None  # Aucun shell disponible
     
-def start_terminal(container, shell, port):
+def start_terminal(container, shell):
+    # Si terminal déjà en cours pour ce conteneur, vérifier qu'il est toujours actif
+    if container in ttyd_instances:
+        instance = ttyd_instances[container]
+        if instance["process"].poll() is None:
+            # Processus ttyd toujours actif, on réutilise le port
+            return instance["port"]
+        else:
+            # Nettoyer s'il est mort
+            del ttyd_instances[container]
+
+    port = get_free_port()
     ttyd_cmd = [
         'ttyd',
+        '-W',
+        '--base-path', f'/ttyd/{port}',
         '--port', str(port),
-        '--interface', '0.0.0.0',
+        '--interface', '127.0.0.1',
         'docker', 'exec', '-it', container, shell
     ]
-    subprocess.Popen(ttyd_cmd)
+    process = subprocess.Popen(ttyd_cmd)
+    
+    # Stocker l'information
+    ttyd_instances[container] = {"port": port, "process": process}
+    
+    # Laisser un court instant à ttyd pour démarrer avant d'y accéder (optionnel mais recommandé)
+    time.sleep(0.5)
+    return port
     
 @app.route('/exec/<container>')
 def open_terminal(container):
@@ -315,12 +342,10 @@ def open_terminal(container):
     if not shell:
         return f"Aucun shell interactif trouvé dans le conteneur {container}", 500
 
-    port = get_free_port()
-
     try:
-        start_terminal(container, shell, port)
-        ip = request.host.split(':')[0]
-        return redirect(f"http://{ip}:{port}")
+        port = start_terminal(container, shell)
+        # Nginx route automatiquement /ttyd/<port>/ vers 127.0.0.1:<port>
+        return redirect(f"/ttyd/{port}/")
     except Exception as e:
         return f"Erreur lors de l'ouverture du terminal pour {container} : {str(e)}", 500
 

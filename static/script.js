@@ -103,7 +103,15 @@ function renderProjects() {
   </div>
 </div>
  
-
+ <div class="logs-dropdown console-dropdown">
+  <div class="hover-group">
+    <img src="/static/icons/console.png" 
+         class="btn-console action-icon" 
+         data-project="${project.name}" 
+         alt="Console">
+    <ul class="dropdown-menu hidden"></ul>
+  </div>
+</div>
 					
    
                     </div>
@@ -352,8 +360,6 @@ function redirectToEdit() {
     window.location.href = `/edit/${projectName}`;
 }
 
-li.addEventListener('click', () => {
-    window.open(`/exec/${c.name}`, '_blank');
-});
+
 
 
