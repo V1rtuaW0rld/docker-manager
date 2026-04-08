@@ -1,11 +1,7 @@
 services:
   docker-manager:
-<<<<<<< Updated upstream
     build: .
-    image: virtuaworld/docker-manager:latest
-=======
-    image: docker-manager-arm:latest
->>>>>>> Stashed changes
+    image: virtuaworld/docker-manager-arm:latest
     container_name: docker-manager
     ports:
       - "5000-5050:5000-5050"
@@ -13,19 +9,8 @@ services:
       - FLASK_APP=app.py
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-<<<<<<< Updated upstream
-      - SERVER_IP=192.168.0.2
-=======
-      - SERVER_IP=192.168.0.26
->>>>>>> Stashed changes
+      - SERVER_IP=192.168.x.x
     volumes:
-      - /home/virtua/docker:/root/projects-docker-compose
+      - /home/user/docker:/root/projects-docker-compose
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-    networks:
-      - web
-
-networks:
-  web:
-    external: true
-
