@@ -9,9 +9,9 @@ services:
       - FLASK_APP=app.py
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-      - SERVER_IP=192.168.0.2
+      - SERVER_IP=192.168.X.X
     volumes:
-      - /root/projects-docker-compose:/root/projects-docker-compose
+      - /your/local/docker-compose-directory:/root/projects-docker-compose
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     networks:
