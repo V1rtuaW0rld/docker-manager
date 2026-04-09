@@ -2,6 +2,8 @@
 
 A lightweight, modern web interface to manage your Docker Compose projects across different architectures.
 
+<img width="615" height="435" alt="image" src="https://github.com/user-attachments/assets/d9fb868a-e4c4-49ad-94a0-a973471613cf" />
+
 ---
 
 ## 🇬🇧 English Description
