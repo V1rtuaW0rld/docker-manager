@@ -8,11 +8,16 @@ A lightweight, modern web interface to manage your Docker Compose projects acros
 
 ## 🇬🇧 English Description
 
-**Docker Manager** is a minimalist but powerful web dashboard designed to centralize the management of multiple Docker Compose stacks.
+**Docker Manager** is a minimalist but powerful web dashboard designed to centralize the management of multiple Docker Compose stacks. It provides complete control over your container ecosystem from any device.
 
 ### ✨ Key Features & Usage
 
-#### 1. Clickable Titles (Project Links)
+#### 🛠 Interactive Management
+- **In-Browser Editor**: Edit your `docker-compose.yml` files directly in the web interface with instant save.
+- **Real-Time Logs**: Monitor your containers' activity with a high-performance streaming log viewer.
+- **Integrated Terminal**: Open a fully functional shell (bash/sh) into any container directly in your browser using hidden `ttyd` integration.
+
+#### 🔗 Clickable Titles (Project Links)
 To make a project name clickable and redirect to its web interface, simply add a commented URL as the **very first line** of your `docker-compose.yml` file:
 ```yaml
 #https://jellyfin.example.com
@@ -22,15 +27,13 @@ services:
 ...
 ```
 
-#### 2. Automatic Logos
-To display a logo for a project, just place a file named `logo.png` in the same directory as your `docker-compose.yml`. The application will automatically detect and resize it for the dashboard.
+#### 🖼 Automatic Logos
+Place a file named `logo.png` in the project directory. The application will automatically detect and display it on the dashboard.
 
-#### 3. Smart Discovery
-Identify containers belonging to each project using directory-based lookups. No specific naming convention is required for your containers anymore.
+#### 🔍 Smart Discovery
+Robustly identifies containers belonging to each project using directory-based `docker compose` lookups, regardless of container naming conventions.
 
-### 🚀 Quick Start (Deployment)
-To run Docker Manager, use the following volume mapping and environment variables:
-
+### 🚀 Deployment
 ```yaml
 services:
   docker-manager:
@@ -38,7 +41,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - SERVER_IP=192.168.0.x # Your server IP for terminal access
+      - SERVER_IP=192.168.0.x # Important for terminal access
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /your/local/projects-directory:/root/projects-docker-compose
@@ -48,12 +51,17 @@ services:
 
 ## 🇫🇷 Description Française
 
-**Docker Manager** est un tableau de bord web minimaliste et puissant conçu pour centraliser la gestion de vos piles Docker Compose.
+**Docker Manager** est un tableau de bord web minimaliste et puissant conçu pour centraliser la gestion de vos piles Docker Compose. Gardez le contrôle total sur vos conteneurs depuis n'importe quel appareil.
 
 ### ✨ Fonctionnalités & Utilisation
 
-#### 1. Titres Cliquables (Liens Projets)
-Pour qu'un nom de projet devienne un lien vers son interface web, ajoutez simplement l'URL en commentaire sur la **toute première ligne** de votre fichier `docker-compose.yml` :
+#### 🛠 Gestion Interactive
+- **Éditeur Intégré** : Modifiez vos fichiers `docker-compose.yml` directement depuis l'interface web avec sauvegarde instantanée.
+- **Logs en Streaming** : Surveillez l'activité de vos conteneurs en temps réel avec un lecteur de logs haute performance.
+- **Console Web** : Ouvrez un terminal interactif (bash/sh) dans n'importe quel conteneur via une intégration transparente de `ttyd`.
+
+#### 🔗 Titres Cliquables (Liens Projets)
+Ajoutez une URL en commentaire sur la **toute première ligne** de votre fichier `docker-compose.yml` pour rendre le titre cliquable :
 ```yaml
 #https://jellyfin.virtuaworld.org
 services:
@@ -62,15 +70,13 @@ services:
 ...
 ```
 
-#### 2. Logos Automatiques
-Pour afficher un logo, glissez simplement un fichier `logo.png` à côté de votre `docker-compose.yml`. L'application le détectera et le redimensionnera automatiquement.
+#### 🖼 Logos Automatiques
+Glissez un fichier `logo.png` à côté de votre `docker-compose.yml`. L'application le détectera et l'affichera automatiquement sur le dashboard.
 
-#### 3. Découverte Intelligente
-L'application identifie les conteneurs appartenant à chaque projet via une recherche basée sur les répertoires. Aucune convention de nommage n'est désormais imposée pour vos conteneurs.
+#### 🔍 Découverte Intelligente
+Identifie de manière robuste les conteneurs appartenant à chaque projet via une recherche basée sur les répertoires, sans contrainte de nommage.
 
-### 🚀 Démarrage Rapide (Déploiement)
-Pour lancer Docker Manager, utilisez les montages de volumes et variables suivants :
-
+### 🚀 Déploiement
 ```yaml
 services:
   docker-manager:
@@ -78,7 +84,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - SERVER_IP=192.168.0.x # L'IP de votre serveur pour le terminal
+      - SERVER_IP=192.168.0.x # Important pour l'accès terminal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /votre/chemin/local/projets:/root/projects-docker-compose
@@ -88,6 +94,6 @@ services:
 
 ### 🛠 Tech Stack
 - **Backend**: Python / Flask
-- **Frontend**: Vanilla JS / CSS3 (Modern UI)
+- **Frontend**: Vanilla JS / CSS3
 - **Terminal**: ttyd
-- **Reverse Proxy**: Nginx (integrated)
+- **Architecture**: Multi-arch (AMD64, ARM64/Raspberry Pi)
