@@ -174,22 +174,12 @@ def home():
 
 import subprocess
 
-@app.route('/logs/<project_name>')
-def get_logs(project_name):
-    """Récupérer les logs en streaming, avec gestion insensible à la casse"""
-    
-    # Trouver le bon nom du conteneur
-    result = subprocess.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True)
-    container_names = result.stdout.splitlines()
-    
-    real_name = next((name for name in container_names if name.lower() == project_name.lower()), None)
-    
-    if not real_name:
-        return f"Conteneur '{project_name}' introuvable.", 404
-    
+@app.route('/logs/<container_name>')
+def get_logs(container_name):
+    """Récupérer les logs en streaming pour un conteneur donné"""
     # Lancer les logs Docker en streaming
     def generate():
-        log_process = subprocess.Popen(["docker", "logs", "-f", real_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        log_process = subprocess.Popen(["docker", "logs", "-f", container_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         for line in iter(log_process.stdout.readline, ''):
             yield f"data: {line.strip()}\n\n"  # Format EventSource
 
@@ -231,24 +221,26 @@ def save_compose(project_name):
 import subprocess
 
 def get_containers_for_project(project_name):
+    """Lister les conteneurs appartenant réellement à ce projet via docker compose"""
+    project_path = os.path.join(DOCKER_PROJECTS_PATH, project_name)
     try:
         result = subprocess.run(
-            ["docker", "ps", "-a", "--format", "{{.Names}}"],
+            ["docker", "compose", "ps", "-a", "--format", "{{.Name}}"],
+            cwd=project_path,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             check=True
         )
 
-        containers = [
-            {"name": name}
-            for name in result.stdout.strip().split("\n")
-            if project_name.lower() in name.lower()
-        ]
-        return containers
+        names = result.stdout.strip().split("\n")
+        return [{"name": name} for name in names if name]
 
     except subprocess.CalledProcessError as e:
-        print(f"Erreur Docker : {e.stderr}")
+        print(f"Erreur Docker discovery pour {project_name} : {e.stderr}")
+        return []
+    except Exception as e:
+        print(f"Erreur inattendue discovery pour {project_name} : {e}")
         return []
 
 @app.route('/api/projects/<project_name>/containers')
